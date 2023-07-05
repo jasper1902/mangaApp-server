@@ -4,8 +4,8 @@ interface IManga extends Document {
   title: string;
   description?: string;
   image?: string;
-  episode?: Schema.Types.ObjectId[];
-  book?: Schema.Types.ObjectId[];
+  chapters?: Schema.Types.ObjectId[];
+  books?: Schema.Types.ObjectId[];
   tagList?: string[];
   slug: string;
   uploader: Schema.Types.ObjectId;
@@ -25,13 +25,13 @@ const mangaSchema = new mongoose.Schema<IManga, MangaModel>(
     image: {
       type: String,
     },
-    episode: [
+    chapters: [
       {
         type: Schema.Types.ObjectId,
-        ref: "MangaEpisode",
+        ref: "MangaChapter",
       },
     ],
-    book: [
+    books: [
       {
         type: Schema.Types.ObjectId,
         ref: "MangaBook",

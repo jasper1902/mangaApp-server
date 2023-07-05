@@ -6,6 +6,7 @@ interface IUser extends Document {
   password: string;
   email: string;
   role: "admin" | "user";
+  image: string;
 }
 
 interface IUserMethods {
@@ -15,45 +16,53 @@ interface IUserMethods {
 
 type UserModel = Model<IUser, object, IUserMethods>;
 
-const userSchema = new mongoose.Schema<IUser, UserModel, IUserMethods>({
-  username: {
-    type: String,
-    required: [true, "Username is required."],
-    unique: true,
-    lowercase: true,
-    minlength: 4,
-    maxlength: 32,
-    validate: {
-      validator: (v: string) => /^[a-zA-Z0-9]+$/.test(v),
-      message: (props) =>
-        `${props.value} is not a valid username. Only alphanumeric characters are allowed.`,
+const userSchema = new mongoose.Schema<IUser, UserModel, IUserMethods>(
+  {
+    username: {
+      type: String,
+      required: [true, "Username is required."],
+      unique: true,
+      lowercase: true,
+      minlength: 4,
+      maxlength: 32,
+      validate: {
+        validator: (v: string) => /^[a-zA-Z0-9]+$/.test(v),
+        message: (props) =>
+          `${props.value} is not a valid username. Only alphanumeric characters are allowed.`,
+      },
+    },
+    password: {
+      type: String,
+      required: [true, "Password is required."],
+      minlength: 6,
+    },
+    email: {
+      type: String,
+      required: [true, "Email is required."],
+      unique: true,
+      lowercase: true,
+      index: true,
+      match: [/^\S+@\S+.\S+$/, "is invalid"],
+      trim: true,
+      validate: {
+        validator: (v: string) =>
+          /^([\w-\\.]+@([\w-]+\.)+[\w-]{2,4})?$/.test(v),
+        message: (props) => `${props.value} is not a valid email.`,
+      },
+    },
+    role: {
+      type: String,
+      required: true,
+      enum: ["admin", "user"],
+      default: "user",
+    },
+    image: {
+      type: String,
+      default: "https://static.productionready.io/images/smiley-cyrus.jpg",
     },
   },
-  password: {
-    type: String,
-    required: [true, "Password is required."],
-    minlength: 6,
-  },
-  email: {
-    type: String,
-    required: [true, "Email is required."],
-    unique: true,
-    lowercase: true,
-    index: true,
-    match: [/^\S+@\S+.\S+$/, "is invalid"],
-    trim: true,
-    validate: {
-      validator: (v: string) => /^([\w-\\.]+@([\w-]+\.)+[\w-]{2,4})?$/.test(v),
-      message: (props) => `${props.value} is not a valid email.`,
-    },
-  },
-  role: {
-    type: String,
-    required: true,
-    enum: ["admin", "user"],
-    default: "user",
-  },
-});
+  { timestamps: true }
+);
 
 userSchema.method(
   "generateAccessToken",
@@ -67,7 +76,7 @@ userSchema.method(
         user: {
           id: this._id,
           email: this.email,
-          role: this.role
+          role: this.role,
         },
       },
       process.env.TOKEN,
@@ -82,6 +91,7 @@ interface ToUserResponse {
   email: string;
   role: "admin" | "user";
   token: string;
+  image: string;
 }
 
 userSchema.method("toUserResponse", function toUserResponse() {
@@ -92,6 +102,7 @@ userSchema.method("toUserResponse", function toUserResponse() {
       email: this.email,
       role: this.role,
       token: token,
+      image: this.image,
     };
   } catch (error) {
     throw new Error("Failed to generate user response");

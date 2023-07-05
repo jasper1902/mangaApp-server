@@ -3,6 +3,7 @@ import Joi from "joi";
 import User from "../models/User";
 import bcrypt from "bcrypt";
 import { AuthRequest } from "../middlewares/verifyJWT";
+import mongoose from "mongoose";
 
 interface UserRegisterReq {
   user: {
@@ -122,6 +123,33 @@ export const getcurrentUser: RequestHandler = async (req, res, next) => {
     res.status(200).json({
       user: await user.toUserResponse(),
     });
+  } catch (error) {
+    next(error);
+  }
+};
+
+interface GetUsernameRequest {
+  user: {
+    userId: string;
+  };
+}
+
+export const getUsername: RequestHandler<
+  unknown,
+  unknown,
+  GetUsernameRequest,
+  unknown
+> = async (req, res, next) => {
+  try {
+    const userId = req.body.user?.userId || "";
+    if (!mongoose.Types.ObjectId.isValid(userId.toString())) {
+      return res.status(400).json({ message: "Invalid mangaID" });
+    }
+    const username = await User.findById(userId);
+    if (!username) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    res.status(200).json({ user: { username: username?.username } });
   } catch (error) {
     next(error);
   }

@@ -6,6 +6,7 @@ import createHttpError, { isHttpError } from "http-errors";
 import userRoutes from "./src/routes/user";
 import mangaRoutes from "./src/routes/manga";
 import cors from "cors";
+import morgan from 'morgan';
 import path from "path";
 
 dotenv.config();
@@ -16,6 +17,7 @@ connectDB(process.env.MONGO_URI as string);
 app.use(cors());
 app.use(express.json());
 app.use(catchInvalidJsonError);
+app.use(morgan('dev'));
 
 app.use("/api", userRoutes);
 app.use("/api/manga", mangaRoutes);
@@ -26,6 +28,8 @@ app.get("/public/images/:imageName", (req, res) => {
     path.join(__dirname, "src", "public", "images", req.params.imageName)
   );
 });
+
+
 
 app.use((req, res, next) => {
   next(createHttpError(404, "Endpoint not found"));

@@ -13,12 +13,10 @@ const MangaBookSchema = new mongoose.Schema<IMangaBook, MangaBookModel>(
     book: {
       type: Number,
       required: true,
-      unique: true,
     },
     slug: {
       type: String,
       require: true,
-      unique: true,
     },
     images: [
       {
