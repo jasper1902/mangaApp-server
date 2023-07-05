@@ -10,6 +10,7 @@ import MangaChapter from "../models/MangaChapter";
 import MangaBook from "../models/MangaBook";
 import { AdminAuthRequest } from "../middlewares/verifyAdmin";
 import { MulterError } from "multer";
+import User from "../models/User";
 
 const createMangaSchema = Joi.object({
   title: Joi.string().required(),
@@ -140,6 +141,7 @@ export const createMangaChapters: RequestHandler<
           .status(500)
           .json({ message: "Internal Server Error", error: err.message });
       }
+
       const { error, value }: ValidationResult<CreateMangaChaptersRequest> =
         createMangaChaptersRequestSchema.validate(req.body);
 
@@ -192,12 +194,14 @@ interface CreateMangaBooksRequest {
   slug?: string;
   image: Express.Multer.File[];
   mangaID: Schema.Types.ObjectId;
+  title: string;
 }
 
 const createMangaBooksRequestSchema = Joi.object({
   book: Joi.number().required(),
   slug: Joi.string(),
   mangaID: Joi.string().required(),
+  title: Joi.string().required(),
 });
 
 export const createMangaBooks: RequestHandler<
@@ -219,6 +223,7 @@ export const createMangaBooks: RequestHandler<
 ) => {
   try {
     uploadMangaImage(req, res, async function (err) {
+      console.log(req.body);
       if (err instanceof MulterError) {
         console.error(err);
         return res
@@ -233,6 +238,7 @@ export const createMangaBooks: RequestHandler<
       if (!req.files || req.files.length === 0) {
         return res.status(400).json({ message: "No files uploaded" });
       }
+      const newReq = req as unknown as AdminAuthRequest;
 
       const { error, value }: ValidationResult<CreateMangaBooksRequest> =
         createMangaBooksRequestSchema.validate(req.body);
@@ -253,6 +259,8 @@ export const createMangaBooks: RequestHandler<
         book: value.book,
         images: imageUrls,
         slug: value.slug ? value.slug : value.book,
+        author: newReq.userId,
+        title: value.title,
       });
 
       await book.save();
@@ -265,13 +273,10 @@ export const createMangaBooks: RequestHandler<
         return res.status(400).json({ message: "Invalid mangaID" });
       }
 
-      const updatedManga = await Manga.findByIdAndUpdate(
-        req.body.mangaID.toString(),
-        {
-          $push: { books: book._id },
-        }
-      );
-      res.status(200).json(updatedManga);
+      await Manga.findByIdAndUpdate(req.body.mangaID.toString(), {
+        $push: { books: book._id },
+      });
+      res.status(200).json({ message: "Create manga book successfully" });
     });
   } catch (error) {
     next(error);
