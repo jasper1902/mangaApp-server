@@ -312,6 +312,7 @@ export const getMangaById: RequestHandler = async (req, res, next) => {
     if (!manga) {
       return res.status(404).json({ message: "Manga not found" });
     }
+
     return res.status(200).json({ manga });
   } catch (error) {
     next(error);
@@ -389,6 +390,42 @@ export const deleteManga: RequestHandler<
     }
 
     return res.status(200).json({ message: "Delete successfully!" });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const deleteMangaBookById: RequestHandler<
+  ParamsDictionary,
+  unknown,
+  unknown,
+  Query,
+  Record<string, unknown>
+> = async (req, res, next) => {
+  try {
+    const { bookId, mangaId } = req.params;
+
+    const isValidIds =
+      mongoose.Types.ObjectId.isValid(bookId) &&
+      mongoose.Types.ObjectId.isValid(mangaId);
+    if (!isValidIds) {
+      return res.status(400).json({ message: "Invalid manga ID" });
+    }
+
+    const manga = await Manga.findById(mangaId);
+    if (!manga || !manga.books) {
+      return res.status(404).json({ message: "MangaBook not found" });
+    }
+
+    manga.books = manga.books.filter((book) => book.toString() !== bookId);
+    await manga.save();
+
+    const deletedMangaBook = await MangaBook.findByIdAndDelete(bookId);
+    if (!deletedMangaBook) {
+      return res.status(404).json({ message: "Manga not found" });
+    }
+
+    return res.status(200).json({ message: "Delete successful!" });
   } catch (error) {
     next(error);
   }

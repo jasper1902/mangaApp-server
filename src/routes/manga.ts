@@ -4,6 +4,7 @@ import {
   createMangaBooks,
   createMangaChapters,
   deleteManga,
+  deleteMangaBookById,
   getAllManga,
   getMangaBookDetail,
   getMangaById,
@@ -21,5 +22,6 @@ router.get("/:slug", getMangaBySlug);
 router.get("/book/:bookId", getMangaBookDetail);
 router.get("/tags/:tag", getMangaByTags);
 router.delete("/:id", verifyAdmin, deleteManga);
+router.delete("/book/:mangaId/:bookId", verifyAdmin, deleteMangaBookById);
 router.get("/id/:mangaId", verifyAdmin, getMangaById);
 export default router;
