@@ -3,8 +3,10 @@ import { v4 as uuidv4 } from "uuid";
 import { Request } from "express";
 const storage = diskStorage({
   destination: function (req: Request, file: Express.Multer.File, cb) {
-    // cb(null, "../../../mangaApp-client/src/assets/public/images");
-    cb(null, "/../Users/Jasper/Documents/GitHub/mangaApp-client/src/assets/public/images");
+    cb(
+      null,
+      "/../Users/Jasper/Documents/GitHub/mangaApp-client/src/assets/public/images"
+    );
   },
   filename: function (req: Request, file: Express.Multer.File, cb) {
     const sanitizedName = file.originalname.replace(/ /g, "_");
@@ -18,7 +20,7 @@ export const uploadMangaPoster = multer({
   limits: { fileSize: 1024 * 1024 * 500 }, // 5 MB
 }).single("image");
 
-export const uploadMangaImage = multer({
+export const uploadMangaImages = multer({
   storage: storage,
   limits: { fileSize: 1024 * 1024 * 500 }, // 5 MB
 }).array("image");

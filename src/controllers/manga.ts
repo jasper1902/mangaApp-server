@@ -5,11 +5,12 @@ import Joi, { ValidationResult } from "joi";
 import mongoose, { Schema } from "mongoose";
 
 import Manga from "../models/Manga";
-import { uploadMangaImage, uploadMangaPoster } from "../middlewares/multer";
+import { uploadMangaImages, uploadMangaPoster } from "../middlewares/multer";
 import MangaChapter from "../models/MangaChapter";
 import MangaBook from "../models/MangaBook";
 import { AdminAuthRequest } from "../middlewares/verifyAdmin";
 import { MulterError } from "multer";
+import { deleteImage } from "../middlewares/deleteImage";
 import User from "../models/User";
 
 const createMangaSchema = Joi.object({
@@ -87,6 +88,7 @@ export const createManga: RequestHandler<
         tagList: value.tagList,
         slug: slug,
         uploader: newReq.userId,
+        lasteditor: newReq.userId,
       };
 
       const manga = await Manga.create(mangaData);
@@ -129,7 +131,7 @@ export const createMangaChapters: RequestHandler<
   next: NextFunction
 ) => {
   try {
-    uploadMangaImage(req, res, async function (err) {
+    uploadMangaImages(req, res, async function (err) {
       if (err instanceof MulterError) {
         console.error(err);
         return res
@@ -222,7 +224,7 @@ export const createMangaBooks: RequestHandler<
   next: NextFunction
 ) => {
   try {
-    uploadMangaImage(req, res, async function (err) {
+    uploadMangaImages(req, res, async function (err) {
       console.log(req.body);
       if (err instanceof MulterError) {
         console.error(err);
@@ -426,11 +428,110 @@ export const deleteMangaBookById: RequestHandler<
     await manga.save();
 
     const deletedMangaBook = await MangaBook.findByIdAndDelete(bookId);
+    console.log(deletedMangaBook);
     if (!deletedMangaBook) {
       return res.status(404).json({ message: "Manga not found" });
     }
 
+    deleteImage(deletedMangaBook.images);
+
     return res.status(200).json({ message: "Delete successful!" });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const updateMangaSchema = Joi.object({
+  title: Joi.string().required(),
+  description: Joi.string(),
+  image: Joi.string(),
+  tagList: Joi.array().items(Joi.string()),
+  slug: Joi.string(),
+});
+
+interface UpdateMangaRequest {
+  title: string;
+  description?: string;
+  image?: Express.Multer.File;
+  tagList?: string[];
+  slug?: string;
+}
+
+export const updateManga: RequestHandler<
+  ParamsDictionary,
+  unknown,
+  UpdateMangaRequest,
+  Query,
+  Record<string, unknown>
+> = async (
+  req: Request<
+    ParamsDictionary,
+    unknown,
+    UpdateMangaRequest,
+    Query,
+    Record<string, unknown>
+  >,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    uploadMangaPoster(req, res, async function (err) {
+      if (err instanceof MulterError) {
+        console.error(err);
+        return res
+          .status(400)
+          .json({ message: "File upload error", error: err.message });
+      } else if (err) {
+        console.error(err);
+        return res
+          .status(500)
+          .json({ message: "Internal Server Error", error: err.message });
+      }
+      const { mangaId } = req.params;
+      const { error, value }: ValidationResult<UpdateMangaRequest> =
+        updateMangaSchema.validate(req.body);
+      if (error) {
+        return res
+          .status(400)
+          .json({ message: "Validation error", error: error.details });
+      }
+
+      const newReq = req as unknown as AdminAuthRequest;
+
+      const slug = slugify(value.slug || value.title || "", {
+        lower: true,
+        replacement: "-",
+      });
+
+      const manga = await Manga.findById(mangaId);
+
+      if (!manga) {
+        return res.status(404).json({ message: "manga not found" });
+      }
+
+      const user = await User.findById(newReq.userId);
+
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      const imageArray = [manga.image].filter(
+        (image) => image !== undefined
+      ) as string[];
+      deleteImage(imageArray);
+
+      manga.title = value.title;
+      manga.description = value.description;
+      manga.image = req.file?.filename
+        ? `/public/images/${req.file?.filename}`
+        : manga?.image;
+      manga.tagList = value.tagList;
+      manga.slug = slug;
+      manga.lasteditor = user._id;
+      await manga.save();
+
+      res.status(200).json({ message: "Update manga detail successful!" });
+    });
   } catch (error) {
     next(error);
   }
