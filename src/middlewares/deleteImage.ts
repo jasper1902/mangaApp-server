@@ -2,7 +2,7 @@ import fs from "fs";
 const imageFolderPath =
   "/../Users/Jasper/Documents/GitHub/mangaApp-client/src/assets/public/images/";
 
-export const deleteImage = (imagePathArray: string[]) => {
+export const deleteImageMiddleware = (imagePathArray: string[]) => {
   imagePathArray.map((img) => {
     const imagePath = img.slice(15);
     try {

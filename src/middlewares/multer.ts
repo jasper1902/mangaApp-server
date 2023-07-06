@@ -15,12 +15,12 @@ const storage = diskStorage({
   },
 });
 
-export const uploadMangaPoster = multer({
+export const uploadMangaPosterMiddleware = multer({
   storage: storage,
   limits: { fileSize: 1024 * 1024 * 500 }, // 5 MB
 }).single("image");
 
-export const uploadMangaImages = multer({
+export const uploadMangaImagesMiddleware = multer({
   storage: storage,
   limits: { fileSize: 1024 * 1024 * 500 }, // 5 MB
 }).array("image");

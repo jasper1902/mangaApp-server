@@ -9,7 +9,7 @@ interface IManga extends Document {
   tagList?: string[];
   slug: string;
   uploader: Schema.Types.ObjectId;
-  lasteditor: Schema.Types.ObjectId;
+  lastEditor: Schema.Types.ObjectId;
 }
 
 type MangaModel = Model<IManga, object>;
@@ -52,7 +52,7 @@ const mangaSchema = new mongoose.Schema<IManga, MangaModel>(
       type: Schema.Types.ObjectId,
       ref: "User",
     },
-    lasteditor: {
+    lastEditor: {
       type: Schema.Types.ObjectId,
       ref: "User",
     },
