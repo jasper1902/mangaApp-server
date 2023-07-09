@@ -1,7 +1,7 @@
 import { RequestHandler, Request, Response, NextFunction } from "express";
 import { ParamsDictionary, Query } from "express-serve-static-core";
 import slugify from "slugify";
-import Joi, { ValidationResult } from "joi";
+import Joi, { ValidationResult, string } from "joi";
 import mongoose, { Schema } from "mongoose";
 
 import Manga from "../models/Manga";
@@ -10,7 +10,7 @@ import {
   uploadMangaPosterMiddleware,
 } from "../middlewares/multer";
 import MangaChapter from "../models/MangaChapter";
-import MangaBook from "../models/MangaBook";
+
 import { AdminAuthRequest } from "../middlewares/verifyAdmin";
 import { MulterError } from "multer";
 import { deleteImageMiddleware } from "../middlewares/deleteImage";
@@ -107,114 +107,19 @@ export const handleMangaCreation: RequestHandler<
   }
 };
 
-interface MangaChaptersCreationRequest {
-  chapter: number;
-  slug?: string;
-  images: Express.Multer.File[];
-  mangaID: Schema.Types.ObjectId;
-}
-
-const mangaChaptersValidationSchema = Joi.object({
-  chapter: Joi.number().required(),
-  slug: Joi.string(),
-  mangaID: Joi.string().required(),
-});
-
-export const handleMangaChaptersCreation: RequestHandler<
-  ParamsDictionary,
-  unknown,
-  MangaChaptersCreationRequest,
-  Query,
-  Record<string, unknown>
-> = async (
-  req: Request<
-    ParamsDictionary,
-    unknown,
-    MangaChaptersCreationRequest,
-    Query,
-    Record<string, unknown>
-  >,
-  res: Response,
-  next: NextFunction
-) => {
-  try {
-    uploadMangaImagesMiddleware(
-      req,
-      res,
-      async function handleMangaImagesUpload(err) {
-        if (err instanceof MulterError) {
-          console.error(err);
-          return res
-            .status(400)
-            .json({ message: "File upload error", error: err.message });
-        } else if (err) {
-          console.error(err);
-          return res
-            .status(500)
-            .json({ message: "Internal Server Error", error: err.message });
-        }
-
-        const { error, value }: ValidationResult<MangaChaptersCreationRequest> =
-          mangaChaptersValidationSchema.validate(req.body);
-
-        if (error) {
-          return res.status(400).json({ message: "Validation error", error });
-        }
-
-        if (!req.files || req.files.length === 0) {
-          return res.status(400).json({ message: "No files uploaded" });
-        }
-
-        const uploadedImagesArray = Array.isArray(req.files)
-          ? req.files
-          : [req.files["image"]].flat();
-
-        const uploadedImageUrls = uploadedImagesArray.map(
-          (file) => `/public/images/${file.filename}`
-        );
-        const newMangaChapter = new MangaChapter({
-          chapter: value.chapter,
-          images: uploadedImageUrls,
-          slug: value.slug ? value.slug : value.chapter.toString(),
-        });
-        await newMangaChapter.save();
-
-        if (!req.body.mangaID) {
-          return res.status(404).json({ message: "mangaID is required" });
-        }
-
-        if (!mongoose.Types.ObjectId.isValid(req.body.mangaID.toString())) {
-          return res.status(400).json({ message: "Invalid mangaID" });
-        }
-
-        const updatedMangaEntry = await Manga.findByIdAndUpdate(
-          req.body.mangaID.toString(),
-          {
-            $push: { chapters: newMangaChapter._id },
-          }
-        );
-
-        res.status(200).json(updatedMangaEntry);
-      }
-    );
-  } catch (error) {
-    next(error);
-  }
-};
-
 interface CreateMangaBooksRequest {
-  book: number;
   slug?: string;
   image: Express.Multer.File[];
   mangaID: Schema.Types.ObjectId;
   title: string;
+  type: "book" | "chapter";
 }
 
 const createMangaBooksRequestSchema = Joi.object({
-  book: Joi.number().required(),
   slug: Joi.string(),
   mangaID: Joi.string().required(),
   title: Joi.string().required(),
+  type: Joi.string().valid("book", "chapter").required(),
 });
 
 export const handleCreateMangaBooks: RequestHandler<
@@ -226,7 +131,6 @@ export const handleCreateMangaBooks: RequestHandler<
 > = async (request, response, nextFunction) => {
   try {
     uploadMangaImagesMiddleware(request, response, async function (err) {
-      console.log(request.body);
       if (err instanceof MulterError) {
         console.error(err);
         return response
@@ -260,12 +164,16 @@ export const handleCreateMangaBooks: RequestHandler<
         (file) => `/public/images/${file.filename}`
       );
 
-      const newMangaBook = new MangaBook({
-        book: value.book,
+      if (value.type !== "book" && value.type !== "chapter") {
+        return response.status(400).json({ message: "Invalid type" });
+      }
+
+      const newMangaBook = new MangaChapter({
         images: uploadedImageUrls,
-        slug: value.slug ? value.slug : value.book,
+        slug: value.slug,
         author: authenticatedRequest.userId,
         title: value.title,
+        type: value.type,
       });
 
       await newMangaBook.save();
@@ -349,7 +257,26 @@ export const getMangaBookDetail: RequestHandler<
 > = async (request, response, next) => {
   try {
     const { bookId } = request.params;
-    const bookDetails = await MangaBook.findById(bookId);
+    const bookDetails = await MangaChapter.findById(bookId);
+    response.status(200).json(bookDetails);
+  } catch (error) {
+    next(error);
+  }
+};
+
+interface MangaBookBySlugParams {
+  bookSlug: string;
+}
+
+export const getMangaBookBySlug: RequestHandler<
+  MangaBookBySlugParams,
+  unknown,
+  unknown,
+  unknown
+> = async (request, response, next) => {
+  try {
+    const { bookSlug } = request.params;
+    const bookDetails = await MangaChapter.findOne({ slug: bookSlug });
     response.status(200).json(bookDetails);
   } catch (error) {
     next(error);
@@ -434,7 +361,7 @@ export const deleteMangaBookById: RequestHandler<
     );
     await foundManga.save();
 
-    const deletedBook = await MangaBook.findByIdAndDelete(bookId);
+    const deletedBook = await MangaChapter.findByIdAndDelete(bookId);
 
     if (!deletedBook) {
       return res.status(404).json({ message: "Manga not found" });

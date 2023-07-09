@@ -1,25 +1,31 @@
-import mongoose, { Document, Model } from "mongoose";
+import mongoose, { Document, Model, Schema } from "mongoose";
 
 interface IMangaChapter extends Document {
-  chapter: number;
+  book: number;
   slug: string;
   images: string[];
+  title: string;
+  author: Schema.Types.ObjectId;
+  lastEditor: Schema.Types.ObjectId;
+  type: "book" | "chapter" | "video";
 }
 
-type MangaChapterModel = Model<IMangaChapter, object>;
+type MangaChapterModel = Model<IMangaChapter>;
 
-const MangaChapterSchema = new mongoose.Schema<
-  IMangaChapter,
-  MangaChapterModel
->(
+const MangaChapterSchema = new Schema<IMangaChapter, MangaChapterModel>(
   {
-    chapter: {
-      type: Number,
+    type: {
+      type: String,
+      default: "book",
+      enum: ["book", "chapter", "video"],
+    },
+    title: {
+      type: String,
       required: true,
     },
     slug: {
       type: String,
-      require: true,
+      required: true,
     },
     images: [
       {
@@ -27,6 +33,11 @@ const MangaChapterSchema = new mongoose.Schema<
         required: true,
       },
     ],
+    author: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
   },
   { timestamps: true }
 );

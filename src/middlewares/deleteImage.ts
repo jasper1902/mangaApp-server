@@ -1,8 +1,7 @@
 import fs from "fs";
-const imageFolderPath =
-  "/../Users/Jasper/Documents/GitHub/mangaApp-client/src/assets/public/images/";
 
 export const deleteImageMiddleware = (imagePathArray: string[]) => {
+  const imageFolderPath = process.env.IMAGE_PATH as string;
   imagePathArray.map((img) => {
     const imagePath = img.slice(15);
     try {

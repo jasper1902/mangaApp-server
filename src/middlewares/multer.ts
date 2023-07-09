@@ -5,7 +5,7 @@ const storage = diskStorage({
   destination: function (req: Request, file: Express.Multer.File, cb) {
     cb(
       null,
-      "/../Users/Jasper/Documents/GitHub/mangaApp-client/src/assets/public/images"
+      process.env.IMAGE_PATH as string
     );
   },
   filename: function (req: Request, file: Express.Multer.File, cb) {
@@ -17,10 +17,10 @@ const storage = diskStorage({
 
 export const uploadMangaPosterMiddleware = multer({
   storage: storage,
-  limits: { fileSize: 1024 * 1024 * 500 }, // 5 MB
+  limits: { fileSize: 1024 * 1024 * 5 }, // 5 MB
 }).single("image");
 
 export const uploadMangaImagesMiddleware = multer({
   storage: storage,
-  limits: { fileSize: 1024 * 1024 * 500 }, // 5 MB
+  limits: { fileSize: 1024 * 1024 * 5 }, // 5 MB
 }).array("image");
