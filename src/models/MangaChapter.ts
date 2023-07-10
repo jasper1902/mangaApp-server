@@ -1,6 +1,6 @@
 import mongoose, { Document, Model, Schema } from "mongoose";
 
-interface IMangaChapter extends Document {
+export interface IMangaChapter extends Document {
   book: number;
   slug: string;
   images: string[];
@@ -26,6 +26,7 @@ const MangaChapterSchema = new Schema<IMangaChapter, MangaChapterModel>(
     slug: {
       type: String,
       required: true,
+      unique: true
     },
     images: [
       {

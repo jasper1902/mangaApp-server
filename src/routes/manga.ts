@@ -11,6 +11,7 @@ import {
   handleMangaCreation,
   updateMangaDetails,
   getMangaBookBySlug,
+
 } from "../controllers/manga";
 import verifyAdmin from "../middlewares/verifyAdmin";
 
@@ -26,4 +27,5 @@ router.delete("/:mangaId", verifyAdmin, handleMangaDeletion);
 router.delete("/book/:mangaId/:bookId", verifyAdmin, deleteMangaBookById);
 router.get("/id/:mangaId", verifyAdmin, getMangaById);
 router.put("/update/:mangaId", verifyAdmin, updateMangaDetails);
+
 export default router;

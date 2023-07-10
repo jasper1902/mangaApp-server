@@ -63,8 +63,8 @@ export const register: RequestHandler<
         .status(500)
         .json({ error: "Error occurred while hashing password" });
     }
-  } catch (error) {
-    next(error);
+  } catch (catchedError) {
+    next(catchedError);
   }
 };
 
@@ -123,8 +123,8 @@ export const getcurrentUser: RequestHandler = async (req, res, next) => {
     res.status(200).json({
       user: await user.toUserResponse(),
     });
-  } catch (error) {
-    next(error);
+  } catch (catchedError) {
+    next(catchedError);
   }
 };
 
@@ -150,7 +150,7 @@ export const getUsername: RequestHandler<
       return res.status(404).json({ error: "User not found" });
     }
     res.status(200).json({ user: { username: username?.username } });
-  } catch (error) {
-    next(error);
+  } catch (catchedError) {
+    next(catchedError);
   }
 };

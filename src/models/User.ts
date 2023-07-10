@@ -1,7 +1,7 @@
 import mongoose, { Document, Model } from "mongoose";
 import jwt from "jsonwebtoken";
 
-interface IUser extends Document {
+export interface IUser extends Document {
   username: string;
   password: string;
   email: string;
