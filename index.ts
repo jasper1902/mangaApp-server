@@ -6,6 +6,7 @@ import createHttpError, { isHttpError } from "http-errors";
 import userRoutes from "./src/routes/user";
 import mangaRoutes from "./src/routes/manga";
 import toolRoutes from "./src/routes/imageTool";
+import commentRoutes from "./src/routes/comment";
 import cors from "cors";
 import morgan from "morgan";
 import path from "path";
@@ -21,6 +22,7 @@ app.use(catchInvalidJsonError);
 app.use(morgan("dev"));
 
 app.use("/api", userRoutes);
+app.use("/api/comment", commentRoutes);
 app.use("/api/manga", mangaRoutes);
 app.use("/api/tool", toolRoutes);
 

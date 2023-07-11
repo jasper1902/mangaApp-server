@@ -18,6 +18,8 @@ interface IManga extends Document {
 
 interface IMangaMethods {
   toMangaResponse(): Promise<ToMangaResponse>;
+  addComment(commentId: Types.ObjectId): Promise<IManga>;
+  removeComment(commentId: Types.ObjectId): Promise<IManga>;
 }
 
 interface ToMangaResponse {
@@ -125,22 +127,22 @@ mangaSchema.method(
 mangaSchema.method(
   "addComment",
   async function addComment(commentId: Types.ObjectId): Promise<IManga> {
-    if (this.comments.indexOf(commentId) === -1) {
-      this.comments.push(commentId);
+    if (this.comments.indexOf(commentId) === -1) { // ตรวจสอบว่า parameter ที่ส่งมามีใน array comments ไหม ถ้ามี return 0 ไม่มี return -1
+      this.comments.push(commentId); // เมื่อตรวจสอบแล้วว่าไม่มี parameter ใน array ให้เพิ่ม parameter เข้า array
     }
 
-    return this;
+    return this.save();
   }
 );
 
 mangaSchema.method(
   "removeComment",
-  async function removeComment(commentId: string): Promise<IManga> {
+  async function removeComment(commentId: Types.ObjectId): Promise<IManga> {
     if (this.comments.indexOf(commentId) !== -1) {
       this.comments.remove(commentId);
     }
 
-    return this;
+    return this.save();
   }
 );
 

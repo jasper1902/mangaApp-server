@@ -1,5 +1,5 @@
 import mongoose, { Schema, Document, Model, Types } from "mongoose";
-import User, { IUser } from "./User";
+import User from "./User";
 
 interface IComment {
   body: string;
@@ -8,7 +8,7 @@ interface IComment {
 }
 
 interface ICommentMethods {
-  toCommentResponse(user: IUser | null | undefined): Promise<ToCommentResponse | undefined>;
+  toCommentResponse(): Promise<ToCommentResponse | undefined>;
 }
 
 interface CommentDocument extends Document, IComment, ICommentMethods {
@@ -28,7 +28,11 @@ interface ToCommentResponse {
   };
 }
 
-const CommentSchema = new Schema<CommentDocument, CommentModel, ICommentMethods>(
+const CommentSchema = new Schema<
+  CommentDocument,
+  CommentModel,
+  ICommentMethods
+>(
   {
     body: {
       type: String,
@@ -50,7 +54,7 @@ const CommentSchema = new Schema<CommentDocument, CommentModel, ICommentMethods>
 
 CommentSchema.method(
   "toCommentResponse",
-  async function toCommentResponse(user: IUser | null | undefined): Promise<ToCommentResponse | undefined> {
+  async function toCommentResponse(): Promise<ToCommentResponse | undefined> {
     const comment = this as Document & CommentDocument;
     const author = await User.findById(comment.author).lean().exec();
 
@@ -61,7 +65,7 @@ CommentSchema.method(
           createdAt: comment.createdAt,
           updatedAt: comment.updatedAt,
           author: {
-            username: user?.username ?? "",
+            username: author?.username ?? "",
             image: author.image,
           },
         }
@@ -71,4 +75,7 @@ CommentSchema.method(
 
 type CommentModel = Model<CommentDocument>;
 
-export default mongoose.model<CommentDocument, CommentModel>("Comment", CommentSchema);
+export default mongoose.model<CommentDocument, CommentModel>(
+  "Comment",
+  CommentSchema
+);
