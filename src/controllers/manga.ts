@@ -171,7 +171,7 @@ export const handleCreateMangaBooks: RequestHandler<
       const slug = await MangaChapter.findOne({ slug: value.slug });
 
       if (slug) {
-        response.status(400).json({ message: "slug already exists" });
+        return response.status(400).json({ message: "slug already exists" });
       }
 
       const newMangaBook = new MangaChapter({

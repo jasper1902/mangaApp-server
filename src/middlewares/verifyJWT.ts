@@ -17,7 +17,7 @@ const verifyJWT = (req: Request, res: Response, next: NextFunction) => {
     const token = authHeader.split(" ")[1];
 
     if (!process.env.TOKEN || typeof process.env.TOKEN !== "string") {
-      return res.status(500).json({ error: "Token is not configured" });
+      return res.status(500).json({ message: "Token is not configured" });
     }
 
     const decoded = jwt.verify(token, process.env.TOKEN) as JwtPayload;

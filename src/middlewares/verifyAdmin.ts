@@ -19,7 +19,7 @@ const verifyAdmin = (req: Request, res: Response, next: NextFunction) => {
 
     const tokenConfig = process.env.TOKEN;
     if (!tokenConfig || typeof tokenConfig !== "string") {
-      return res.status(500).json({ error: "Token is not configured" });
+      return res.status(500).json({ message: "Token is not configured" });
     }
 
     const decoded = jwt.verify(token, tokenConfig) as JwtPayload;

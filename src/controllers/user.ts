@@ -3,7 +3,7 @@ import Joi from "joi";
 import User from "../models/User";
 import bcrypt from "bcrypt";
 import { AuthRequest } from "../middlewares/verifyJWT";
-import mongoose from "mongoose";
+import Manga from "../models/Manga";
 
 interface UserRegisterReq {
   user: {
@@ -30,7 +30,7 @@ export const register: RequestHandler<
 
     const { error } = userJoiSchema.validate({ email, password, username });
     if (error) {
-      return res.status(400).json({ error: error.details[0].message });
+      return res.status(400).json({ message: error.details[0].message });
     }
 
     const emailAlreadyExists = await User.findOne({ email: email });
@@ -39,11 +39,11 @@ export const register: RequestHandler<
     });
 
     if (emailAlreadyExists) {
-      return res.status(409).json({ error: "Email already exists" });
+      return res.status(409).json({ message: "Email already exists" });
     }
 
     if (usernameAlreadyExists) {
-      return res.status(409).json({ error: "Username already exists" });
+      return res.status(409).json({ message: "Username already exists" });
     }
 
     let hashPassword;
@@ -61,7 +61,7 @@ export const register: RequestHandler<
     } catch (error) {
       return res
         .status(500)
-        .json({ error: "Error occurred while hashing password" });
+        .json({ message: "Error occurred while hashing password" });
     }
   } catch (catchedError) {
     next(catchedError);
@@ -91,20 +91,24 @@ export const login: RequestHandler<
 
     const { error } = userJoiSchema.validate({ identifier, password });
     if (error) {
-      return res.status(400).json({ error: error.details[0].message });
+      return res.status(400).json({ message: error.details[0].message });
     }
 
     const userAccount = await User.findOne({
       $or: [{ email: identifier }, { username: identifier }],
     });
     if (!userAccount) {
-      return res.status(404).json({ error: "email or password is incorrect" });
+      return res
+        .status(404)
+        .json({ message: "email or password is incorrect" });
     }
 
     const validPassword = await bcrypt.compare(password, userAccount.password);
 
     if (!validPassword) {
-      return res.status(400).json({ error: "email or password is incorrect" });
+      return res
+        .status(400)
+        .json({ message: "email or password is incorrect" });
     }
 
     return res.status(200).json({ user: userAccount.toUserResponse() });
@@ -118,38 +122,12 @@ export const getcurrentUser: RequestHandler = async (req, res, next) => {
     const newReq = req as unknown as AuthRequest;
     const user = await User.findById(newReq.userId);
     if (!user) {
-      return res.status(404).json({ error: "User not found" });
+      return res.status(404).json({ message: "User not found" });
     }
+
     res.status(200).json({
       user: await user.toUserResponse(),
     });
-  } catch (catchedError) {
-    next(catchedError);
-  }
-};
-
-interface GetUsernameRequest {
-  user: {
-    userId: string;
-  };
-}
-
-export const getUsername: RequestHandler<
-  unknown,
-  unknown,
-  GetUsernameRequest,
-  unknown
-> = async (req, res, next) => {
-  try {
-    const userId = req.body.user?.userId || "";
-    if (!mongoose.Types.ObjectId.isValid(userId.toString())) {
-      return res.status(400).json({ message: "Invalid mangaID" });
-    }
-    const username = await User.findById(userId);
-    if (!username) {
-      return res.status(404).json({ error: "User not found" });
-    }
-    res.status(200).json({ user: { username: username?.username } });
   } catch (catchedError) {
     next(catchedError);
   }
