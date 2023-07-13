@@ -75,7 +75,7 @@ export const register: RequestHandler = async (
   }
 };
 
-interface UserLoginReq {
+interface UserLoginRequestBodyType {
   user: {
     identifier: string;
     password: string;
@@ -83,7 +83,13 @@ interface UserLoginReq {
 }
 
 export const login: RequestHandler = async (
-  request: Request,
+  request: Request<
+    ParamsDictionary,
+    unknown,
+    UserLoginRequestBodyType,
+    Query,
+    Record<string, unknown>
+  >,
   response: Response,
   nextFunction: NextFunction
 ) => {
@@ -140,5 +146,24 @@ export const getcurrentUser: RequestHandler = async (
     });
   } catch (catchedError) {
     nextFunction(catchedError);
+  }
+};
+
+export const getUserById: RequestHandler = async (
+  request: Request,
+  response: Response,
+  nextFunction: NextFunction
+) => {
+  try {
+    const userId = request.params.userId;
+    const user = await User.findById(userId).exec();
+
+    if (!user) {
+      return response.status(404).json({ message: "User not found" });
+    }
+
+    response.status(200).json({ user: user.toUserResponse() });
+  } catch (error) {
+    nextFunction(error);
   }
 };

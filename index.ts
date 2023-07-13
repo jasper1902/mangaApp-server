@@ -21,7 +21,7 @@ app.use(express.json());
 // app.use(catchInvalidJsonError);
 app.use(morgan("dev"));
 
-app.use("/api", userRoutes);
+app.use("/api/account", userRoutes);
 app.use("/api/comment", commentRoutes);
 app.use("/api/manga", mangaRoutes);
 app.use("/api/tool", toolRoutes);
