@@ -16,12 +16,11 @@ interface IManga extends Document {
   updatedAt: Date;
 }
 
-interface IMangaMethods {
+interface IMangaMethods extends mongoose.Model<IManga> {
   toMangaResponse(): Promise<ToMangaResponse>;
   addComment(commentId: Types.ObjectId): Promise<IManga>;
-  removeComment(commentId: Types.ObjectId): Promise<IManga>;
+  removeComment(commentId: Types.ObjectId): Promise<void>; // Update the type to Types.ObjectId
 }
-
 interface ToMangaResponse {
   title: string;
   description: string;
@@ -74,8 +73,6 @@ const mangaSchema = new Schema<IManga, MangaModel, IMangaMethods>(
         ref: "Comment",
       },
     ],
-    createdAt: Date,
-    updatedAt: Date,
   },
   { timestamps: true }
 );
@@ -130,6 +127,7 @@ mangaSchema.method(
     if (this.comments.indexOf(commentId) === -1) { // ตรวจสอบว่า parameter ที่ส่งมามีใน array comments ไหม ถ้ามี return 0 ไม่มี return -1
       this.comments.push(commentId); // เมื่อตรวจสอบแล้วว่าไม่มี parameter ใน array ให้เพิ่ม parameter เข้า array
     }
+    
 
     return this.save();
   }

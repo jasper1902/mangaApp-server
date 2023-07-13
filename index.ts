@@ -18,7 +18,7 @@ connectDB(process.env.MONGO_URI as string);
 
 app.use(cors());
 app.use(express.json());
-app.use(catchInvalidJsonError);
+// app.use(catchInvalidJsonError);
 app.use(morgan("dev"));
 
 app.use("/api", userRoutes);

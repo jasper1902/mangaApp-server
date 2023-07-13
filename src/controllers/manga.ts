@@ -32,49 +32,42 @@ interface MangaCreationRequest {
   slug?: string;
 }
 
-export const handleMangaCreation: RequestHandler<
-  ParamsDictionary,
-  unknown,
-  MangaCreationRequest,
-  Query,
-  Record<string, unknown>
-> = async (
-  req: Request<
+export const handleMangaCreation: RequestHandler = async (
+  request: Request<
     ParamsDictionary,
     unknown,
     MangaCreationRequest,
     Query,
     Record<string, unknown>
   >,
-  res: Response,
-  next: NextFunction
+  response: Response,
+  nextFunction: NextFunction
 ) => {
   try {
     uploadMangaPosterMiddleware(
-      req,
-      res,
+      request,
+      response,
       async function handleMangaPosterUpload(err) {
         if (err instanceof MulterError) {
           console.error(err);
-          return res
+          return response
             .status(400)
             .json({ message: "File upload error", error: err.message });
         } else if (err) {
           console.error(err);
-          return res
+          return response
             .status(500)
             .json({ message: "Internal Server Error", error: err.message });
         }
 
         const { error, value }: ValidationResult<MangaCreationRequest> =
-          mangaValidationSchema.validate(req.body);
+          mangaValidationSchema.validate(request.body);
         if (error) {
-          return res
+          return response
             .status(400)
             .json({ message: "Validation error", error: error.details });
         }
-
-        const adminAuthRequest = req as unknown as AdminAuthRequest;
+        const adminAuthRequest = request as unknown as AdminAuthRequest;
 
         const mangaSlug = slugify(value.slug || value.title || "", {
           lower: true,
@@ -84,13 +77,15 @@ export const handleMangaCreation: RequestHandler<
         const existingMangaSlug = await Manga.findOne({ slug: mangaSlug });
 
         if (existingMangaSlug) {
-          return res.status(409).json({ message: "Manga slug already exists" });
+          return response
+            .status(409)
+            .json({ message: "Manga slug already exists" });
         }
 
         const newMangaData = {
           title: value.title,
           description: value.description,
-          image: `/public/images/${req.file?.filename}`,
+          image: `/public/images/${request.file?.filename}`,
           tagList: value.tagList,
           slug: mangaSlug,
           uploader: adminAuthRequest.userId,
@@ -99,11 +94,11 @@ export const handleMangaCreation: RequestHandler<
 
         const createdManga = await Manga.create(newMangaData);
 
-        res.status(200).json({ manga: createdManga });
+        response.status(200).json({ manga: createdManga });
       }
     );
   } catch (catchedError) {
-    next(catchedError);
+    nextFunction(catchedError);
   }
 };
 
@@ -122,13 +117,17 @@ const createMangaBooksRequestSchema = Joi.object({
   type: Joi.string().valid("book", "chapter").required(),
 });
 
-export const handleCreateMangaBooks: RequestHandler<
-  ParamsDictionary,
-  unknown,
-  CreateMangaBooksRequest,
-  Query,
-  Record<string, unknown>
-> = async (request, response, nextFunction) => {
+export const handleCreateMangaBooks: RequestHandler = async (
+  request: Request<
+    ParamsDictionary,
+    unknown,
+    CreateMangaBooksRequest,
+    Query,
+    Record<string, unknown>
+  >,
+  response: Response,
+  nextFunction: NextFunction
+) => {
   try {
     uploadMangaImagesMiddleware(request, response, async function (err) {
       if (err instanceof MulterError) {
@@ -206,22 +205,22 @@ export const handleCreateMangaBooks: RequestHandler<
 };
 
 export const handleGetAllManga: RequestHandler = async (
-  request,
-  response,
-  next
+  request: Request,
+  response: Response,
+  nextFunction: NextFunction
 ) => {
   try {
     const allMangas = await Manga.find().sort({ createdAt: "desc" });
     response.status(200).json(allMangas);
   } catch (catchedError) {
-    next(catchedError);
+    nextFunction(catchedError);
   }
 };
 
 export const handleGetMangaBySlug: RequestHandler = async (
-  request,
-  response,
-  next
+  request: Request,
+  response: Response,
+  nextFunction: NextFunction
 ) => {
   try {
     const { slug } = request.params;
@@ -232,11 +231,15 @@ export const handleGetMangaBySlug: RequestHandler = async (
 
     response.status(200).json(await foundManga.toMangaResponse());
   } catch (catchedError) {
-    next(catchedError);
+    nextFunction(catchedError);
   }
 };
 
-export const getMangaById: RequestHandler = async (request, response, next) => {
+export const getMangaById: RequestHandler = async (
+  request: Request,
+  response: Response,
+  nextFunction: NextFunction
+) => {
   try {
     const { mangaId } = request.params;
 
@@ -251,58 +254,43 @@ export const getMangaById: RequestHandler = async (request, response, next) => {
 
     response.status(200).json({ manga: retrievedManga });
   } catch (catchedError) {
-    next(catchedError);
+    nextFunction(catchedError);
   }
 };
 
-interface MangaBookByIdParams {
-  bookId: string;
-}
-
-export const getMangaBookDetail: RequestHandler<
-  MangaBookByIdParams,
-  unknown,
-  unknown,
-  unknown
-> = async (request, response, next) => {
+export const getMangaBookDetail: RequestHandler = async (
+  request: Request,
+  response: Response,
+  nextFunction: NextFunction
+) => {
   try {
     const { bookId } = request.params;
     const bookDetails = await MangaChapter.findById(bookId);
     response.status(200).json(bookDetails);
   } catch (catchedError) {
-    next(catchedError);
+    nextFunction(catchedError);
   }
 };
 
-interface MangaBookBySlugParams {
-  bookSlug: string;
-}
-
-export const getMangaBookBySlug: RequestHandler<
-  MangaBookBySlugParams,
-  unknown,
-  unknown,
-  unknown
-> = async (request, response, next) => {
+export const getMangaBookBySlug: RequestHandler = async (
+  request: Request,
+  response: Response,
+  nextFunction: NextFunction
+) => {
   try {
     const { bookSlug } = request.params;
     const bookDetails = await MangaChapter.findOne({ slug: bookSlug });
     response.status(200).json(bookDetails);
   } catch (catchedError) {
-    next(catchedError);
+    nextFunction(catchedError);
   }
 };
 
-interface MangaByTagsParams {
-  tag: string;
-}
-
-export const getMangaByTags: RequestHandler<
-  MangaByTagsParams,
-  unknown,
-  unknown,
-  unknown
-> = async (request, response, next) => {
+export const getMangaByTags: RequestHandler = async (
+  request: Request,
+  response: Response,
+  nextFunction: NextFunction
+) => {
   try {
     const { tag } = request.params;
     const matchingMangaList = await Manga.find({
@@ -312,17 +300,15 @@ export const getMangaByTags: RequestHandler<
     });
     response.status(200).json(matchingMangaList);
   } catch (error) {
-    next(error);
+    nextFunction(error);
   }
 };
 
-export const handleMangaDeletion: RequestHandler<
-  ParamsDictionary,
-  unknown,
-  unknown,
-  Query,
-  Record<string, unknown>
-> = async (request, response, next) => {
+export const handleMangaDeletion: RequestHandler = async (
+  request: Request,
+  response: Response,
+  nextFunction: NextFunction
+) => {
   try {
     const { mangaId } = request.params;
 
@@ -340,30 +326,28 @@ export const handleMangaDeletion: RequestHandler<
 
     return response.status(200).json({ message: "Deletion successful!" });
   } catch (catchedError) {
-    next(catchedError);
+    nextFunction(catchedError);
   }
 };
 
-export const deleteMangaBookById: RequestHandler<
-  ParamsDictionary,
-  unknown,
-  unknown,
-  Query,
-  Record<string, unknown>
-> = async (req, res, next) => {
+export const deleteMangaBookById: RequestHandler = async (
+  request: Request,
+  response: Response,
+  nextFunction: NextFunction
+) => {
   try {
-    const { bookId, mangaId } = req.params;
+    const { bookId, mangaId } = request.params;
 
     const areValidIds =
       mongoose.Types.ObjectId.isValid(bookId) &&
       mongoose.Types.ObjectId.isValid(mangaId);
     if (!areValidIds) {
-      return res.status(400).json({ message: "Invalid manga ID" });
+      return response.status(400).json({ message: "Invalid manga ID" });
     }
 
     const foundManga = await Manga.findById(mangaId);
     if (!foundManga || !foundManga.chapters) {
-      return res.status(404).json({ message: "MangaBook not found" });
+      return response.status(404).json({ message: "MangaBook not found" });
     }
 
     foundManga.chapters = foundManga.chapters.filter(
@@ -374,14 +358,14 @@ export const deleteMangaBookById: RequestHandler<
     const deletedBook = await MangaChapter.findByIdAndDelete(bookId);
 
     if (!deletedBook) {
-      return res.status(404).json({ message: "Manga not found" });
+      return response.status(404).json({ message: "Manga not found" });
     }
 
     deleteImageMiddleware(deletedBook.images);
 
-    return res.status(200).json({ message: "Deletion successful!" });
+    return response.status(200).json({ message: "Deletion successful!" });
   } catch (catchedError) {
-    next(catchedError);
+    nextFunction(catchedError);
   }
 };
 
@@ -401,39 +385,43 @@ interface MangaUpdateRequest {
   slug?: string;
 }
 
-export const updateMangaDetails: RequestHandler<
-  ParamsDictionary,
-  unknown,
-  MangaUpdateRequest,
-  Query,
-  Record<string, unknown>
-> = async (req, res, next) => {
+export const updateMangaDetails: RequestHandler = async (
+  request: Request<
+    ParamsDictionary,
+    unknown,
+    MangaUpdateRequest,
+    Query,
+    Record<string, unknown>
+  >,
+  response,
+  nextFunction: NextFunction
+) => {
   try {
     uploadMangaPosterMiddleware(
-      req,
-      res,
+      request,
+      response,
       async function handleUploadMangaPoster(err) {
         if (err instanceof MulterError) {
           console.error(err);
-          return res
+          return response
             .status(400)
             .json({ message: "File upload error", error: err.message });
         } else if (err) {
           console.error(err);
-          return res
+          return response
             .status(500)
             .json({ message: "Internal Server Error", error: err.message });
         }
-        const { mangaId } = req.params;
+        const { mangaId } = request.params;
         const { error, value }: ValidationResult<MangaUpdateRequest> =
-          mangaUpdateSchema.validate(req.body);
+          mangaUpdateSchema.validate(request.body);
         if (error) {
-          return res
+          return response
             .status(400)
             .json({ message: "Validation error", error: error.details });
         }
 
-        const adminAuthReq = req as unknown as AdminAuthRequest;
+        const adminAuthReq = request as unknown as AdminAuthRequest;
 
         const slug = slugify(value.slug || value.title || "", {
           lower: true,
@@ -443,13 +431,13 @@ export const updateMangaDetails: RequestHandler<
         const foundManga = await Manga.findById(mangaId);
 
         if (!foundManga) {
-          return res.status(404).json({ message: "Manga not found" });
+          return response.status(404).json({ message: "Manga not found" });
         }
 
         const user = await User.findById(adminAuthReq.userId);
 
         if (!user) {
-          return res.status(404).json({ message: "User not found" });
+          return response.status(404).json({ message: "User not found" });
         }
 
         const existingImageURLs = [foundManga.image].filter(
@@ -459,20 +447,20 @@ export const updateMangaDetails: RequestHandler<
 
         foundManga.title = value.title;
         foundManga.description = value.description;
-        foundManga.image = req.file?.filename
-          ? `/public/images/${req.file?.filename}`
+        foundManga.image = request.file?.filename
+          ? `/public/images/${request.file?.filename}`
           : foundManga?.image;
         foundManga.tagList = value.tagList;
         foundManga.slug = slug;
         foundManga.lastEditor = user._id;
         await foundManga.save();
 
-        res
+        response
           .status(200)
           .json({ message: "Manga details updated successfully!" });
       }
     );
   } catch (catchedError) {
-    next(catchedError);
+    nextFunction(catchedError);
   }
 };

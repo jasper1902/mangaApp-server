@@ -1,11 +1,11 @@
-import { RequestHandler } from "express";
+import { RequestHandler, Request, Response, NextFunction } from "express";
+import { ParamsDictionary, Query } from "express-serve-static-core";
 import Joi from "joi";
 import User from "../models/User";
 import bcrypt from "bcrypt";
 import { AuthRequest } from "../middlewares/verifyJWT";
-import Manga from "../models/Manga";
 
-interface UserRegisterReq {
+interface UserRegisterRequestBodyType {
   user: {
     email: string;
     password: string;
@@ -13,14 +13,19 @@ interface UserRegisterReq {
   };
 }
 
-export const register: RequestHandler<
-  unknown,
-  unknown,
-  UserRegisterReq,
-  unknown
-> = async (req, res, next) => {
+export const register: RequestHandler = async (
+  request: Request<
+    ParamsDictionary,
+    unknown,
+    UserRegisterRequestBodyType,
+    Query,
+    Record<string, unknown>
+  >,
+  response: Response,
+  nextFunction: NextFunction
+) => {
   try {
-    const { email, password, username } = req.body.user;
+    const { email, password, username } = request.body.user;
 
     const userJoiSchema = Joi.object({
       username: Joi.string().alphanum().min(4).max(32).required(),
@@ -30,7 +35,7 @@ export const register: RequestHandler<
 
     const { error } = userJoiSchema.validate({ email, password, username });
     if (error) {
-      return res.status(400).json({ message: error.details[0].message });
+      return response.status(400).json({ message: error.details[0].message });
     }
 
     const emailAlreadyExists = await User.findOne({ email: email });
@@ -39,11 +44,11 @@ export const register: RequestHandler<
     });
 
     if (emailAlreadyExists) {
-      return res.status(409).json({ message: "Email already exists" });
+      return response.status(409).json({ message: "Email already exists" });
     }
 
     if (usernameAlreadyExists) {
-      return res.status(409).json({ message: "Username already exists" });
+      return response.status(409).json({ message: "Username already exists" });
     }
 
     let hashPassword;
@@ -57,14 +62,16 @@ export const register: RequestHandler<
 
       await User.create(userObj);
 
-      return res.status(201).json({ message: "User registered successfully" });
+      return response
+        .status(201)
+        .json({ message: "User registered successfully" });
     } catch (error) {
-      return res
+      return response
         .status(500)
         .json({ message: "Error occurred while hashing password" });
     }
   } catch (catchedError) {
-    next(catchedError);
+    nextFunction(catchedError);
   }
 };
 
@@ -75,14 +82,13 @@ interface UserLoginReq {
   };
 }
 
-export const login: RequestHandler<
-  unknown,
-  unknown,
-  UserLoginReq,
-  unknown
-> = async (req, res, next) => {
+export const login: RequestHandler = async (
+  request: Request,
+  response: Response,
+  nextFunction: NextFunction
+) => {
   try {
-    const { identifier, password } = req.body.user;
+    const { identifier, password } = request.body.user;
 
     const userJoiSchema = Joi.object({
       password: Joi.string().min(6).required(),
@@ -91,14 +97,14 @@ export const login: RequestHandler<
 
     const { error } = userJoiSchema.validate({ identifier, password });
     if (error) {
-      return res.status(400).json({ message: error.details[0].message });
+      return response.status(400).json({ message: error.details[0].message });
     }
 
     const userAccount = await User.findOne({
       $or: [{ email: identifier }, { username: identifier }],
     });
     if (!userAccount) {
-      return res
+      return response
         .status(404)
         .json({ message: "email or password is incorrect" });
     }
@@ -106,29 +112,33 @@ export const login: RequestHandler<
     const validPassword = await bcrypt.compare(password, userAccount.password);
 
     if (!validPassword) {
-      return res
+      return response
         .status(400)
         .json({ message: "email or password is incorrect" });
     }
 
-    return res.status(200).json({ user: userAccount.toUserResponse() });
+    return response.status(200).json({ user: userAccount.toUserResponse() });
   } catch (error) {
-    next(error);
+    nextFunction(error);
   }
 };
 
-export const getcurrentUser: RequestHandler = async (req, res, next) => {
+export const getcurrentUser: RequestHandler = async (
+  request: Request,
+  response: Response,
+  nextFunction: NextFunction
+) => {
   try {
-    const newReq = req as unknown as AuthRequest;
+    const newReq = request as unknown as AuthRequest;
     const user = await User.findById(newReq.userId);
     if (!user) {
-      return res.status(404).json({ message: "User not found" });
+      return response.status(404).json({ message: "User not found" });
     }
 
-    res.status(200).json({
+    response.status(200).json({
       user: await user.toUserResponse(),
     });
   } catch (catchedError) {
-    next(catchedError);
+    nextFunction(catchedError);
   }
 };

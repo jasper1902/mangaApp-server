@@ -14,10 +14,9 @@ interface ICommentMethods {
 interface CommentDocument extends Document, IComment, ICommentMethods {
   createdAt: Date;
   updatedAt: Date;
-  // Add any additional fields specific to the Comment model
 }
 
-interface ToCommentResponse {
+export interface ToCommentResponse {
   id: string;
   body: string;
   createdAt: Date;
