@@ -10,16 +10,51 @@ import commentRoutes from "./src/routes/comment";
 import cors from "cors";
 import morgan from "morgan";
 import path from "path";
+import swaggerJSDoc from "swagger-jsdoc";
+import swaggerUi from "swagger-ui-express"
 
 dotenv.config();
 const app = express();
 
 connectDB(process.env.MONGO_URI as string);
 
+const swaggerDefinition = {
+  openapi: '3.0.0',
+  info: {
+    title: 'Express API for Manga App',
+    version: '1.0.0',
+    description:
+      'This is a REST API application made with Express. It retrieves data from JSONPlaceholder.',
+    license: {
+      name: 'Licensed Under MIT',
+      url: 'https://spdx.org/licenses/MIT.html',
+    },
+    // contact: {
+    //   name: 'JSONPlaceholder',
+    //   url: 'https://jsonplaceholder.typicode.com',
+    // },
+  },
+  servers: [
+    {
+      url: 'http://localhost:5000',
+      description: 'Development server',
+    },
+  ],
+};
+
+const options = {
+  swaggerDefinition,
+  // Paths to files containing OpenAPI definitions
+  apis: ['./src/routes/*.ts '],
+};
+
+const swaggerSpec = swaggerJSDoc(options);
+
 app.use(cors());
 app.use(express.json());
-// app.use(catchInvalidJsonError);
+app.use(catchInvalidJsonError);
 app.use(morgan("dev"));
+app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 app.use("/api/account", userRoutes);
 app.use("/api/comment", commentRoutes);

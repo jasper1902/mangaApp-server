@@ -9,9 +9,9 @@ export interface AdminAuthRequest extends Request {
 
 const verifyAdmin = (req: Request, res: Response, next: NextFunction) => {
   try {
-    const authHeader = req.headers.authorization;
+    const authHeader: string | undefined = getAuthHeader(req.headers);
 
-    if (!authHeader || !authHeader.startsWith("token ")) {
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return res.status(401).json({ message: "Unauthorized" });
     }
 
@@ -43,6 +43,20 @@ const verifyAdmin = (req: Request, res: Response, next: NextFunction) => {
     console.error(error);
     res.status(401).json({ message: "Invalid token" });
   }
+};
+
+const getAuthHeader = (headers: any): string | undefined => {
+  const authHeader =
+    headers.authorization ||
+    headers.Authorization ||
+    headers["auth-token"] ||
+    headers["Auth-token"];
+
+  if (Array.isArray(authHeader)) {
+    return authHeader[0];
+  }
+
+  return authHeader;
 };
 
 export default verifyAdmin;

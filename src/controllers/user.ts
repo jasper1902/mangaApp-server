@@ -162,7 +162,14 @@ export const getUserById: RequestHandler = async (
       return response.status(404).json({ message: "User not found" });
     }
 
-    response.status(200).json({ user: user.toUserResponse() });
+    response.status(200).json({
+      user: {
+        username: user.username,
+        email: user.email,
+        role: user.role,
+        image: user.image,
+      },
+    });
   } catch (error) {
     nextFunction(error);
   }
